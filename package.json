@@ -12,6 +12,7 @@
     "vite-plugin-restart": "^0.4.2"
   },
   "dependencies": {
+    "gltf": "^1.0.3",
     "gsap": "3.12",
     "lil-gui": "^0.20.0",
     "three": "^0.174.0"

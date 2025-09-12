@@ -2,6 +2,7 @@ const gameOverDiv = document.querySelector('.game-over');
 import * as THREE from 'three'
 import gsap from 'gsap'
 import GUI from 'lil-gui'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/Addons.js'
 const canvas = document.querySelector('canvas.webgl')
 let gui;
@@ -12,6 +13,7 @@ const sizes = { width: window.innerWidth, height: window.innerHeight }
 const cursor = { x: 0, y: 0 }
 const ambientLight = new THREE.HemisphereLight(0xffffff, 0.3)
 const directionalLight = new THREE.DirectionalLight(0xffffff, 2)
+const loader = new GLTFLoader();
 const pressedKeys = new Set()
 let playerMesh
 let floorMesh
@@ -62,7 +64,14 @@ function createMesh1() {
     gui.addColor(mesh1.material, 'color')
     mesh1.castShadow = true
     mesh1.receiveShadow = true
-    return mesh1
+
+
+    loader.load('/models/playerModel.glb', (gltf) => {
+    const model = gltf.scene;
+    model.position.set(0, 0, 0);
+    scene.add(model);
+    })
+        return mesh1
 }
 
 function createMesh2() {
@@ -208,7 +217,6 @@ function makeEnemiesFall(){
         if (enemyFallSpeedMultiplier < 3){
             enemyFallSpeedMultiplier += values.enemyFallSpeedIncrementor
         }
-        console.log(enemyFallSpeedMultiplier)
     })
 }
 
