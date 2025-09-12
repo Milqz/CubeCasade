@@ -54,24 +54,36 @@ function createLights() {
     directionalLight.castShadow = true
 }
 
-function createMesh1() {
-    const material = new THREE.MeshToonMaterial({color: 'red'})
-    const mesh1 = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), material)
-    mesh1.position.y = -2.7
-    mesh1.geometry.parameters = { width: 1, height: 1, depth: 1 }
-    scene.add(mesh1)
-    gui.add(mesh1.position, 'y').min(-2).max(2).step(0.01).name('elevation')
-    gui.addColor(mesh1.material, 'color')
-    mesh1.castShadow = true
-    mesh1.receiveShadow = true
+function loadPlayerModel() {
+    return new Promise((resolve, reject) => {
+        const loader = new GLTFLoader();
+        loader.load('/models/playerModel.glb', (gltf) => {
+            const model = gltf.scene;
+            model.scale.set(0.5, 0.5, 0.5);
+            model.position.set(0, -2.6, 0);
+            model.castShadow = true;
+            model.receiveShadow = true;
 
+            // Example: set all meshes to a red MeshStandardMaterial
+            const material = new THREE.MeshStandardMaterial({ color: 0xff5555 });
+            model.traverse((child) => {
+                if (child.isMesh) {
+                    child.material = material;
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
 
-    loader.load('/models/playerModel.glb', (gltf) => {
-    const model = gltf.scene;
-    model.position.set(0, 0, 0);
-    scene.add(model);
-    })
-        return mesh1
+            scene.add(model);
+            resolve(model);
+        }, undefined, reject);
+    });
+}
+
+async function init() {
+  const player = await loadPlayerModel();
+  playerMesh = player; // <-- assign the loaded model here
+  gui.add(player.position, 'y').min(-2).max(2).step(0.01).name('elevation');
 }
 
 function createMesh2() {
@@ -120,7 +132,8 @@ function createEnemyOnPlayer() {
     const material = new THREE.MeshToonMaterial({ color: 'lightred' })
     const enemy = new THREE.Mesh(geometry, material)
     enemy.position.set(
-        playerMesh.position.x,
+        //playerMesh.position.x,
+        0,
         window.innerHeight / 100,
         0
     )
@@ -136,8 +149,8 @@ function setRandomTimeInterval() {
 }
 
 function createObjects() {
-    playerMesh = createMesh1()
-    floorMesh = createMesh2()
+    init();
+    floorMesh = createMesh2();
 }
 
 function createCamera() {
@@ -202,6 +215,34 @@ handleResize(camera, renderer)
 handleCursor()
 handleMovementInput()
 
+//sounds
+const sounds = [];
+let backgroundMusic;
+const manager = new THREE.LoadingManager();
+const audioLoader = new THREE.AudioLoader(manager);
+const mp3s = [
+    'backgroundSound',
+];
+const listener = new THREE.AudioListener();
+camera.add( listener );
+mp3s.forEach((name) => {
+    const sound = new THREE.Audio( listener );
+    sound.name = name;
+    if (name === 'backgroundSound') {
+        backgroundMusic = sound;
+    }
+    sounds.push(sound);
+    audioLoader.load('/sfx/' + name + '.mp3', function(buffer) {
+        sound.setBuffer(buffer);
+    });
+});
+
+manager.onLoad = function() {
+    backgroundMusic.setLoop(true);
+    backgroundMusic.setVolume(0.5);
+    backgroundMusic.play();
+}
+
 function removeEnemies() {
         const toRemove = enemies.filter(enemy => enemy.position.y < floorMesh.position.y)
     toRemove.forEach(enemy => {
@@ -223,9 +264,11 @@ function makeEnemiesFall(){
 function movePlayer() {
         // Acceleration
     if (pressedKeys.has('ArrowLeft') || pressedKeys.has('a')) {
+        if (playerMesh != null)
         values.playerVelocity -= values.acceleration
     }
     if (pressedKeys.has('ArrowRight') || pressedKeys.has('d')) {
+        if (playerMesh != null)
         values.playerVelocity += values.acceleration
     }
 
@@ -235,12 +278,15 @@ function movePlayer() {
     // Damping
     values.playerVelocity *= values.damping
 
+    let nextX
     // Move player
-    let nextX = playerMesh.position.x + values.playerVelocity
+    if (playerMesh != null){
+        nextX = playerMesh.position.x + values.playerVelocity
+    }
 
     // Boundaries
-    const leftLimit = ((floorMesh.geometry.parameters.width / 2) - floorMesh.geometry.parameters.width) + playerMesh.geometry.parameters.width / 2
-    const rightLimit = (floorMesh.geometry.parameters.width / 2) - playerMesh.geometry.parameters.width / 2
+    const leftLimit = ((floorMesh.geometry.parameters.width / 2) - floorMesh.geometry.parameters.width) + 1
+    const rightLimit = (floorMesh.geometry.parameters.width / 2) - 1 / 2
 
     if (nextX < leftLimit) {
         nextX = leftLimit
@@ -251,20 +297,23 @@ function movePlayer() {
         values.playerVelocity = 0
     }
 
-    playerMesh.position.x = nextX
+    if (playerMesh != null){
+        playerMesh.position.x = nextX
+    }
 }
 
 function checkCollisions() {
-  const playerBox = new THREE.Box3().setFromObject(playerMesh);
+    if (!playerMesh) return;
+    const playerBox = new THREE.Box3().setFromObject(playerMesh);
 
-  enemies.forEach((enemy) => {
-    const enemyBox = new THREE.Box3().setFromObject(enemy);
+    enemies.forEach((enemy) => {
+        const enemyBox = new THREE.Box3().setFromObject(enemy);
 
     if (playerBox.intersectsBox(enemyBox) && isAlive) {
-        isAlive = false;
-        dieAnim();
+         isAlive = false;
+         dieAnim();
     }
-  });
+    });
 }
 
 function dieAnim(){
@@ -402,6 +451,12 @@ scoreInterval = setInterval(() => {
 
 document.getElementById("restart-btn").addEventListener("click", () => {
     restartGame();
+    if (THREE.AudioContext && THREE.AudioContext.getContext().state === 'suspended') {
+        THREE.AudioContext.getContext().resume();
+    }
+    if (backgroundMusic && backgroundMusic.buffer) {
+        backgroundMusic.play();
+    }
 });
 
 tick()
