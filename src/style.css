@@ -1,0 +1,88 @@
+@font-face {
+    font-family: 'AldotheApache';
+    src: url('../fonts/AldotheApache.ttf') format('truetype'); /* adjust path */
+    font-weight: normal;
+    font-style: normal;
+}
+
+* {
+    margin:0;
+    padding: 0;
+}
+
+html, body {
+    overflow: hidden;
+}
+
+.webgl {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    outline: none;
+    z-index: 0;
+}
+
+.game-over {
+    font-family: 'AldotheApache', Arial, sans-serif;
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    text-align: center;
+    opacity: 0;
+    pointer-events: none;
+    background: rgba(0,0,0,0.7);
+    padding: 5em 12em;
+    border-radius: 1em;
+    z-index: 1000;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+}
+
+.game-over h1 {
+    font-family: 'AldotheApache', Arial, sans-serif;
+    font-size: 4em;
+    margin-bottom: 0.5em;
+}
+
+.game-over p {
+    font-family: 'AldotheApache', Arial, sans-serif;
+    font-size: 2em;
+    color: gold;
+    margin-bottom: 1em;
+}
+
+.game-over button {
+    margin-top: 0;
+    padding: 0.7em 1.2em;
+    font-size: 1.5em;
+    font-family: 'AldotheApache', Arial, sans-serif;
+    z-index: 1001;
+    border: none;
+    border-radius: 0.5em;
+    background: #ff5555;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.scoreboard {
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.2);
+    color: white;
+    font-family: 'AldotheApache', Arial, sans-serif;
+    font-size: 3em;
+    padding: 0.5em 1em;
+    border-radius: 0.5em;
+    z-index: 1003;    
+    opacity: 0;
+    transform-origin: center;
+}
+.score-value {
+    color: gold;
+    margin: 0;
+}
