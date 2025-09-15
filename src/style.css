@@ -86,3 +86,39 @@ html, body {
     color: gold;
     margin: 0;
 }
+
+
+.start-screen {
+    font-family: 'AldotheApache', Arial, sans-serif;
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    text-align: center;
+    background: rgba(0,0,0,0.7);
+    padding: 5em 12em;
+    border-radius: 1em;
+    z-index: 1000;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+}
+
+.start-screen h1 {
+    font-family: 'AldotheApache', Arial, sans-serif;
+    font-size: 7em;
+    margin-bottom: 0.5em;
+}
+
+.start-screen button {
+    margin-top: 0;
+    padding: 0.7em 1.6em;
+    font-size: 2.5em;
+    font-family: 'AldotheApache', Arial, sans-serif;
+    z-index: 1001;
+    border: none;
+    border-radius: 0.5em;
+    background: #55ff55;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s;
+}
