@@ -36,7 +36,7 @@ let scoreInterval;
 
 let enemyFallSpeedMultiplier = 1;
 
-let backgroundMusic;
+var backgroundMusic;
 
 const values = {
   enemyFallSpeedIncrementor: 0.0001,
@@ -237,22 +237,22 @@ function initializeScene() {
   renderer = createRenderer();
   handleResize(camera, renderer);
   handleCursor();
+  handleSounds();
 }
 function startGame() {
   controls = createControls(camera);
   handleMovementInput();
-  handleSounds();
   loadScoreboard();
   tick();
 }
 
 function handleSounds() {
-  var sound = new Howl({
+  backgroundMusic = new Howl({
     src: ["sfx/backgroundSound.mp3"],
     loop: true,
   });
 
-  sound.play();
+  backgroundMusic.play();
 }
 
 function removeEnemies() {
@@ -349,6 +349,8 @@ function dieAnim() {
       delay: 0.2,
     });
   });
+
+  gsap.to(backgroundMusic, { volume: 0, duration: 1 });
 
   const scoreElem = document.querySelector(".game-over-score");
   if (scoreElem) scoreElem.textContent = score;
@@ -447,6 +449,9 @@ function restartGame() {
       if (scoreDisplay) scoreDisplay.textContent = score;
     }
   }, 1000);
+  backgroundMusic.stop();
+  backgroundMusic.play();
+  gsap.to(backgroundMusic, { volume: 1, duration: 1 });
 
   const scoreDisplay = document.querySelector(".score-value");
   if (scoreDisplay) scoreDisplay.textContent = score;
