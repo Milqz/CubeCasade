@@ -36,7 +36,14 @@ let scoreInterval;
 
 let enemyFallSpeedMultiplier = 1;
 
-var backgroundMusic;
+var backgroundMusic,
+  lobbyBackgroundMusic,
+  dieSound,
+  UIHoverSound,
+  gameStartSound,
+  turnSound;
+let musicVolume = 0.05;
+let sfxVolume = 0.05;
 
 const values = {
   enemyFallSpeedIncrementor: 0.0001,
@@ -79,7 +86,7 @@ function loadPlayerModel() {
       "/models/playerModel.glb",
       (gltf) => {
         const model = gltf.scene;
-        model.scale.set(0.5, 0.5, 0.5);
+        model.scale.set(0, 0, 0);
         model.position.set(0, -2.6, 0);
         model.castShadow = true;
         model.receiveShadow = true;
@@ -102,9 +109,25 @@ function loadPlayerModel() {
   });
 }
 
+function resetScene() {
+  gsap.to(camera.position, { z: 7, duration: 1, ease: "power2.inOut" });
+}
+
 async function init() {
   const player = await loadPlayerModel();
   playerMesh = player;
+
+  playerMesh.scale.set(0, 0, 0);
+
+  gsap.to(playerMesh.scale, {
+    x: 0.5,
+    y: 0.5,
+    z: 0.5,
+    duration: 0.5,
+    delay: 1,
+    ease: "power2.inOut",
+  });
+
   gui.add(player.position, "y").min(-2).max(2).step(0.01).name("elevation");
 }
 
@@ -138,7 +161,7 @@ function random(min, max) {
 function createEnemy() {
   const enemySize = random(0.6, 1.2);
   const geometry = new THREE.BoxGeometry(enemySize, enemySize, enemySize);
-  const material = new THREE.MeshToonMaterial({ color: "#3b3b3bff" });
+  const material = new THREE.MeshToonMaterial({ color: "gray" });
   const enemy = new THREE.Mesh(geometry, material);
   enemy.position.set(
     floorMesh.geometry.parameters.width / 2 -
@@ -158,7 +181,7 @@ function createEnemy() {
 function createEnemyOnPlayer() {
   const enemySize = random(0.6, 1.2);
   const geometry = new THREE.BoxGeometry(enemySize, enemySize, enemySize);
-  const material = new THREE.MeshToonMaterial({ color: "#3b3b3bff" });
+  const material = new THREE.MeshToonMaterial({ color: "gray" });
   const enemy = new THREE.Mesh(geometry, material);
   enemy.position.set(playerMesh.position.x, window.innerHeight / 100, 0);
 
@@ -238,18 +261,75 @@ function initializeScene() {
   handleResize(camera, renderer);
   handleCursor();
   handleSounds();
+
+  gsap.to(".start-screen", {
+    opacity: 1,
+    duration: 1,
+    ease: "power2.inOut",
+  });
+
+  gsap.to(".start-screen", {
+    scale: 1.05,
+    duration: 1,
+    yoyo: true,
+    repeat: -1,
+    ease: "power1.inOut",
+  });
+
+  gsap.to(".start-screen button", {
+    scale: 1.1,
+    duration: 1,
+    yoyo: true,
+    repeat: -1,
+    ease: "power1.inOut",
+  });
 }
 function startGame() {
+  score = 0;
+  const scoreDisplay = document.querySelector(".score-value");
+  scoreDisplay.textContent = score;
+
+  gameStartSound.play();
   controls = createControls(camera);
   handleMovementInput();
   loadScoreboard();
+  resetScene();
   tick();
 }
 
 function handleSounds() {
   backgroundMusic = new Howl({
+    volume: 1 * musicVolume,
     src: ["sfx/backgroundSound.mp3"],
     loop: true,
+  });
+
+  dieSound = new Howl({
+    volume: 1 * sfxVolume,
+    src: ["sfx/dieSfx.mp3"],
+    loop: false,
+  });
+
+  UIHoverSound = new Howl({
+    volume: 1 * sfxVolume * 3,
+    src: ["sfx/UIHover.mp3"],
+    loop: false,
+  });
+  gameStartSound = new Howl({
+    volume: 1 * sfxVolume * 3,
+    src: ["sfx/GameStartSound.mp3"],
+    loop: false,
+  });
+  lobbyBackgroundMusic = new Howl({
+    volume: 0,
+    src: ["sfx/lobbySound.mp3"],
+    loop: false,
+  });
+
+  turnSound = new Howl({
+    volume: 1 * sfxVolume * 2,
+    src: ["sfx/turnSound.mp3"],
+    loop: false,
   });
 
   backgroundMusic.play();
@@ -265,41 +345,57 @@ function removeEnemies() {
   enemies = enemies.filter((enemy) => enemy.position.y >= floorMesh.position.y);
 }
 
-function makeEnemiesFall() {
+function makeEnemiesFall(delta) {
   if (!isAlive) return;
+  const moveMultiplier = 60;
   enemies.forEach((enemy) => {
     enemy.position.y -= enemy.fallSpeed * enemyFallSpeedMultiplier;
     if (enemyFallSpeedMultiplier < 3) {
-      enemyFallSpeedMultiplier += values.enemyFallSpeedIncrementor;
+      enemyFallSpeedMultiplier +=
+        values.enemyFallSpeedIncrementor * delta * moveMultiplier;
     }
   });
 }
 
-function movePlayer() {
+function movePlayer(delta) {
+  let previousDirection = movePlayer.lastDirection || 0;
+  let currentDirection = 0;
+  const moveMultiplier = 60;
+
   if (pressedKeys.has("ArrowLeft") || pressedKeys.has("a")) {
-    if (playerMesh != null) values.playerVelocity -= values.acceleration;
+    if (playerMesh != null)
+      values.playerVelocity -= values.acceleration * delta * moveMultiplier;
+    currentDirection = -1;
   }
   if (pressedKeys.has("ArrowRight") || pressedKeys.has("d")) {
-    if (playerMesh != null) values.playerVelocity += values.acceleration;
+    if (playerMesh != null)
+      values.playerVelocity += values.acceleration * delta * moveMultiplier;
+    currentDirection = 1;
   }
+
+  if (currentDirection !== 0 && currentDirection !== previousDirection) {
+    turnSound.play();
+  }
+  movePlayer.lastDirection = currentDirection;
 
   values.playerVelocity = Math.max(
     -values.maxSpeed,
     Math.min(values.maxSpeed, values.playerVelocity)
   );
 
-  values.playerVelocity *= values.damping;
+  values.playerVelocity *= Math.pow(values.damping, delta * 60);
 
   let nextX;
   if (playerMesh != null) {
-    nextX = playerMesh.position.x + values.playerVelocity;
+    nextX =
+      playerMesh.position.x + values.playerVelocity * delta * moveMultiplier;
   }
 
   const leftLimit =
     floorMesh.geometry.parameters.width / 2 -
     floorMesh.geometry.parameters.width +
     1;
-  const rightLimit = floorMesh.geometry.parameters.width / 2 - 1 / 2;
+  const rightLimit = floorMesh.geometry.parameters.width / 2 - 0.5;
 
   if (nextX < leftLimit) {
     nextX = leftLimit;
@@ -330,6 +426,9 @@ function checkCollisions() {
 }
 
 function dieAnim() {
+  dieSound.play();
+  lobbyBackgroundMusic.stop();
+  lobbyBackgroundMusic.play();
   gsap.to(playerMesh.scale, {
     x: 0,
     y: 0,
@@ -348,6 +447,12 @@ function dieAnim() {
       ease: "power2.in",
       delay: 0.2,
     });
+  });
+
+  gsap.to(lobbyBackgroundMusic, {
+    volume: 1 * musicVolume,
+    duration: 1,
+    delay: 0.2,
   });
 
   gsap.to(backgroundMusic, { volume: 0, duration: 1 });
@@ -375,6 +480,48 @@ function dieAnim() {
       gameOverDiv.style.pointerEvents = "auto";
     },
   });
+
+  gsap.to(".game-over button", {
+    scale: 1.2,
+    duration: 0.5,
+    onComplete: () => {
+      gsap.to(".game-over button", {
+        scale: 1,
+        duration: 0.5,
+        yoyo: true,
+        repeat: -1,
+        ease: "power1.inOut",
+      });
+    },
+  });
+
+  gsap.to(".game-over h1", {
+    scale: 1.05,
+    duration: 1,
+    onComplete: () => {
+      gsap.to(".game-over h1", {
+        scale: 1,
+        duration: 1,
+        yoyo: true,
+        repeat: -1,
+        ease: "power1.inOut",
+      });
+    },
+  });
+
+  gsap.to(".game-over p", {
+    scale: 1.05,
+    duration: 1,
+    onComplete: () => {
+      gsap.to(".game-over p", {
+        scale: 1,
+        duration: 1,
+        yoyo: true,
+        repeat: -1,
+        ease: "power1.inOut",
+      });
+    },
+  });
 }
 
 function loadScoreboard() {
@@ -392,7 +539,7 @@ const clock = new THREE.Clock();
 
 function tick() {
   const delta = clock.getDelta();
-  movePlayer();
+  movePlayer(delta);
   enemySpawnTimer += delta;
 
   if (enemySpawnTimer > enemySpawnInterval) {
@@ -413,7 +560,7 @@ function tick() {
 
   checkCollisions();
 
-  makeEnemiesFall();
+  makeEnemiesFall(delta);
 
   removeEnemies();
 
@@ -423,6 +570,15 @@ function tick() {
 }
 
 function restartGame() {
+  gameStartSound.play();
+  resetScene();
+  gsap.to(lobbyBackgroundMusic, {
+    volume: 0,
+    duration: 1,
+    onComplete: () => {
+      lobbyBackgroundMusic.stop();
+    },
+  });
   enemies.forEach((enemy) => scene.remove(enemy));
   enemies = [];
 
@@ -451,7 +607,7 @@ function restartGame() {
   }, 1000);
   backgroundMusic.stop();
   backgroundMusic.play();
-  gsap.to(backgroundMusic, { volume: 1, duration: 1 });
+  gsap.to(backgroundMusic, { volume: 1 * musicVolume, duration: 1 });
 
   const scoreDisplay = document.querySelector(".score-value");
   if (scoreDisplay) scoreDisplay.textContent = score;
@@ -462,8 +618,6 @@ function restartGame() {
     duration: 1,
     ease: "power2.inOut",
   });
-
-  camera.position.set(0, 0, 7);
 
   const gameOverDiv = document.querySelector(".game-over");
   gameOverDiv.style.opacity = 0;
@@ -478,7 +632,16 @@ scoreInterval = setInterval(() => {
   if (isAlive) {
     score++;
     const scoreDisplay = document.querySelector(".score-value");
-    if (scoreDisplay) scoreDisplay.textContent = score;
+    if (scoreDisplay) {
+      gsap.to(".scoreboard", {
+        scale: 1.05,
+        duration: 0.2,
+        onComplete: () => {
+          gsap.to(".scoreboard", { scale: 1, duration: 0.2 });
+        },
+      });
+      scoreDisplay.textContent = score;
+    }
   }
 }, 1000);
 
@@ -497,4 +660,8 @@ document.getElementById("start-btn").addEventListener("click", () => {
       startGame();
     },
   });
+});
+
+document.getElementById("restart-btn").addEventListener("mouseenter", () => {
+  UIHoverSound.play();
 });

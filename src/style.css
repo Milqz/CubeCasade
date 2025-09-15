@@ -64,7 +64,13 @@ html, body {
     background: #ff5555;
     color: white;
     cursor: pointer;
-    transition: background 0.3s;
+    transition: 0.3s;
+}
+
+.game-over button:hover {
+    background: #cc3333;
+    transition: 0.3s;
+    scale: 1.05;
 }
 
 .scoreboard {
@@ -101,6 +107,7 @@ html, body {
     border-radius: 1em;
     z-index: 1000;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+    opacity: 0;
 }
 
 .start-screen h1 {
@@ -120,5 +127,11 @@ html, body {
     background: #55ff55;
     color: white;
     cursor: pointer;
-    transition: background 0.3s;
+    transition: 0.3s;
+}
+
+.start-screen button:hover {
+    background: #33cc33;
+    transition: 0.3s;
+    scale: 1.05;
 }
