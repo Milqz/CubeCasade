@@ -98,6 +98,7 @@ function setupGUI() {
     .name("acceleration");
   gui.add(values, "maxSpeed").min(1).max(2).step(0.01).name("max speed");
   gui.add(values, "damping").min(0.7).max(0.99).step(0.01).name("damping");
+  gui.close();
 }
 
 // =======================

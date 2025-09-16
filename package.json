@@ -12,6 +12,7 @@
     "vite-plugin-restart": "^0.4.2"
   },
   "dependencies": {
+    "firebase": "^12.2.1",
     "gltf": "^1.0.3",
     "gsap": "3.12",
     "howler": "^2.2.4",
