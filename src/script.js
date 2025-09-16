@@ -1,41 +1,63 @@
-const gameOverDiv = document.querySelector(".game-over");
+// =======================
+// Imports & Global Setup
+// =======================
 import * as THREE from "three";
 import gsap from "gsap";
 import GUI from "lil-gui";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/Addons.js";
 import { Howl, Howler } from "howler";
-const canvas = document.querySelector("canvas.webgl");
-let gui;
 
+const canvas = document.querySelector("canvas.webgl");
+const gameOverDiv = document.querySelector(".game-over");
+
+// =======================
+// Scene & Camera
+// =======================
 const scene = new THREE.Scene();
 scene.background = new THREE.Color("#e6e6e6");
+
 const sizes = { width: window.innerWidth, height: window.innerHeight };
 const cursor = { x: 0, y: 0 };
+
+// =======================
+// Lighting
+// =======================
 const ambientLight = new THREE.HemisphereLight(0xffffff, 0.3);
 const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
-const loader = new GLTFLoader();
-const pressedKeys = new Set();
 
+// =======================
+// Loaders & Controls
+// =======================
+const loader = new GLTFLoader();
+let gui;
 let camera = new Set();
 let renderer = new Set();
 let controls = new Set();
 
+// =======================
+// Game Objects
+// =======================
 let playerMesh;
 let floorMesh;
-
 let enemies = [];
+
+// =======================
+// Game State
+// =======================
 let enemySpawnTimer = 0;
 let enemySpawnInterval = 2;
 let enemySpawnTimerOnPlayer = 0;
 let enemySpawnIntervalOnPlayer = 1;
-
 let isAlive = true;
 let score = 0;
 let scoreInterval;
-
 let enemyFallSpeedMultiplier = 1;
+const pressedKeys = new Set();
 
+// =======================
+// Audio
+// =======================
 var backgroundMusic,
   lobbyBackgroundMusic,
   dieSound,
@@ -45,6 +67,9 @@ var backgroundMusic,
 let musicVolume = 0.05;
 let sfxVolume = 0.05;
 
+// =======================
+// Configurable Values
+// =======================
 const values = {
   enemyFallSpeedIncrementor: 0.0001,
   playerVelocity: 0,
@@ -53,6 +78,9 @@ const values = {
   damping: 0.7,
 };
 
+// =======================
+// GUI Setup
+// =======================
 function setupGUI() {
   if (gui) gui.destroy();
   gui = new GUI();
@@ -72,6 +100,9 @@ function setupGUI() {
   gui.add(values, "damping").min(0.7).max(0.99).step(0.01).name("damping");
 }
 
+// =======================
+// Lighting Setup
+// =======================
 function createLights() {
   directionalLight.position.set(-3, 2, 1);
   scene.add(directionalLight);
@@ -79,6 +110,9 @@ function createLights() {
   directionalLight.castShadow = true;
 }
 
+// =======================
+// Player & Floor Creation
+// =======================
 function loadPlayerModel() {
   return new Promise((resolve, reject) => {
     const loader = new GLTFLoader();
@@ -109,28 +143,6 @@ function loadPlayerModel() {
   });
 }
 
-function resetScene() {
-  gsap.to(camera.position, { z: 7, duration: 1, ease: "power2.inOut" });
-}
-
-async function init() {
-  const player = await loadPlayerModel();
-  playerMesh = player;
-
-  playerMesh.scale.set(0, 0, 0);
-
-  gsap.to(playerMesh.scale, {
-    x: 0.5,
-    y: 0.5,
-    z: 0.5,
-    duration: 0.5,
-    delay: 1,
-    ease: "power2.inOut",
-  });
-
-  gui.add(player.position, "y").min(-2).max(2).step(0.01).name("elevation");
-}
-
 function createMesh2() {
   const material = new THREE.MeshBasicMaterial({ color: "white" });
   const widthParams = { width: 10 };
@@ -154,6 +166,10 @@ function createMesh2() {
   mesh2.receiveShadow = true;
   return mesh2;
 }
+
+// =======================
+// Enemy Creation
+// =======================
 function random(min, max) {
   return Math.random() * (max - min) + min;
 }
@@ -195,6 +211,9 @@ function setRandomTimeInterval() {
   enemySpawnInterval = Math.random() * 1.5 + 0.2;
 }
 
+// =======================
+// Scene Initialization
+// =======================
 function createObjects() {
   init();
   floorMesh = createMesh2();
@@ -284,6 +303,32 @@ function initializeScene() {
     ease: "power1.inOut",
   });
 }
+
+// =======================
+// Game Start/Restart
+// =======================
+function resetScene() {
+  gsap.to(camera.position, { z: 7, duration: 1, ease: "power2.inOut" });
+}
+
+async function init() {
+  const player = await loadPlayerModel();
+  playerMesh = player;
+
+  playerMesh.scale.set(0, 0, 0);
+
+  gsap.to(playerMesh.scale, {
+    x: 0.5,
+    y: 0.5,
+    z: 0.5,
+    duration: 0.5,
+    delay: 1,
+    ease: "power2.inOut",
+  });
+
+  gui.add(player.position, "y").min(-2).max(2).step(0.01).name("elevation");
+}
+
 function startGame() {
   score = 0;
   const scoreDisplay = document.querySelector(".score-value");
@@ -297,6 +342,68 @@ function startGame() {
   tick();
 }
 
+function restartGame() {
+  gameStartSound.play();
+  resetScene();
+  gsap.to(lobbyBackgroundMusic, {
+    volume: 0,
+    duration: 1,
+    onComplete: () => {
+      lobbyBackgroundMusic.stop();
+    },
+  });
+  enemies.forEach((enemy) => scene.remove(enemy));
+  enemies = [];
+
+  if (playerMesh) scene.remove(playerMesh);
+  if (floorMesh) scene.remove(floorMesh);
+
+  enemyFallSpeedMultiplier = 1;
+
+  isAlive = true;
+  enemySpawnTimer = 0;
+  enemySpawnInterval = 2;
+  enemySpawnTimerOnPlayer = 0;
+  enemySpawnIntervalOnPlayer = 1;
+  values.playerVelocity = 0;
+
+  score = 0;
+  clearInterval(scoreInterval);
+  setupGUI();
+  createObjects();
+  scoreInterval = setInterval(() => {
+    if (isAlive) {
+      score++;
+      const scoreDisplay = document.querySelector(".score-value");
+      if (scoreDisplay) scoreDisplay.textContent = score;
+    }
+  }, 1000);
+  backgroundMusic.stop();
+  backgroundMusic.play();
+  gsap.to(backgroundMusic, { volume: 1 * musicVolume, duration: 1 });
+
+  const scoreDisplay = document.querySelector(".score-value");
+  if (scoreDisplay) scoreDisplay.textContent = score;
+  gsap.to(".scoreboard", {
+    opacity: 1,
+    scale: 1,
+    transformOrigin: "center center",
+    duration: 1,
+    ease: "power2.inOut",
+  });
+
+  const gameOverDiv = document.querySelector(".game-over");
+  gameOverDiv.style.opacity = 0;
+  gameOverDiv.style.pointerEvents = "none";
+
+  if (playerMesh) playerMesh.scale.set(1, 1, 1);
+
+  enemies.forEach((enemy) => enemy.scale.set(1, 1, 1));
+}
+
+// =======================
+// Audio Setup
+// =======================
 function handleSounds() {
   backgroundMusic = new Howl({
     volume: 1 * musicVolume,
@@ -335,6 +442,9 @@ function handleSounds() {
   backgroundMusic.play();
 }
 
+// =======================
+// Game Loop & Mechanics
+// =======================
 function removeEnemies() {
   const toRemove = enemies.filter(
     (enemy) => enemy.position.y < floorMesh.position.y
@@ -534,6 +644,9 @@ function loadScoreboard() {
   });
 }
 
+// =======================
+// Main Loop
+// =======================
 initializeScene();
 const clock = new THREE.Clock();
 
@@ -569,65 +682,9 @@ function tick() {
   window.requestAnimationFrame(tick);
 }
 
-function restartGame() {
-  gameStartSound.play();
-  resetScene();
-  gsap.to(lobbyBackgroundMusic, {
-    volume: 0,
-    duration: 1,
-    onComplete: () => {
-      lobbyBackgroundMusic.stop();
-    },
-  });
-  enemies.forEach((enemy) => scene.remove(enemy));
-  enemies = [];
-
-  if (playerMesh) scene.remove(playerMesh);
-  if (floorMesh) scene.remove(floorMesh);
-
-  enemyFallSpeedMultiplier = 1;
-
-  isAlive = true;
-  enemySpawnTimer = 0;
-  enemySpawnInterval = 2;
-  enemySpawnTimerOnPlayer = 0;
-  enemySpawnIntervalOnPlayer = 1;
-  values.playerVelocity = 0;
-
-  score = 0;
-  clearInterval(scoreInterval);
-  setupGUI();
-  createObjects();
-  scoreInterval = setInterval(() => {
-    if (isAlive) {
-      score++;
-      const scoreDisplay = document.querySelector(".score-value");
-      if (scoreDisplay) scoreDisplay.textContent = score;
-    }
-  }, 1000);
-  backgroundMusic.stop();
-  backgroundMusic.play();
-  gsap.to(backgroundMusic, { volume: 1 * musicVolume, duration: 1 });
-
-  const scoreDisplay = document.querySelector(".score-value");
-  if (scoreDisplay) scoreDisplay.textContent = score;
-  gsap.to(".scoreboard", {
-    opacity: 1,
-    scale: 1,
-    transformOrigin: "center center",
-    duration: 1,
-    ease: "power2.inOut",
-  });
-
-  const gameOverDiv = document.querySelector(".game-over");
-  gameOverDiv.style.opacity = 0;
-  gameOverDiv.style.pointerEvents = "none";
-
-  if (playerMesh) playerMesh.scale.set(1, 1, 1);
-
-  enemies.forEach((enemy) => enemy.scale.set(1, 1, 1));
-}
-
+// =======================
+// Score Handling
+// =======================
 scoreInterval = setInterval(() => {
   if (isAlive) {
     score++;
@@ -645,6 +702,9 @@ scoreInterval = setInterval(() => {
   }
 }, 1000);
 
+// =======================
+// UI Event Listeners
+// =======================
 document.getElementById("restart-btn").addEventListener("click", () => {
   restartGame();
 });
@@ -664,4 +724,33 @@ document.getElementById("start-btn").addEventListener("click", () => {
 
 document.getElementById("restart-btn").addEventListener("mouseenter", () => {
   UIHoverSound.play();
+});
+
+// Slider for volume control
+
+//I want the slider text to be set to the value of the slider on load
+const slider = document.querySelector(".slider input");
+const sliderValueDisplay = document.querySelector(".sliderValue");
+
+// Set the slider text to the value of the slider on load
+if (slider && sliderValueDisplay) {
+  sliderValueDisplay.textContent = Math.round(parseFloat(slider.value) * 100);
+  if (backgroundMusic) {
+    backgroundMusic.volume(musicVolume);
+  }
+  if (lobbyBackgroundMusic) {
+    lobbyBackgroundMusic.volume(musicVolume);
+  }
+}
+
+slider.addEventListener("input", (e) => {
+  const value = parseFloat(e.target.value);
+  musicVolume = value;
+  sliderValueDisplay.textContent = Math.round(value * 100);
+  if (backgroundMusic) {
+    backgroundMusic.volume(musicVolume);
+  }
+  if (lobbyBackgroundMusic) {
+    lobbyBackgroundMusic.volume(musicVolume);
+  }
 });
