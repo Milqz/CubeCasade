@@ -12,6 +12,9 @@
 
 html, body {
     overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .webgl {
@@ -22,6 +25,7 @@ html, body {
     outline: none;
     z-index: 0;
 }
+
 
 .game-over {
     font-family: 'AldotheApache', Arial, sans-serif;
@@ -34,7 +38,8 @@ html, body {
     opacity: 0;
     pointer-events: none;
     background: rgba(0,0,0,0.7);
-    padding: 5em 12em;
+    /*clamp padding*/
+    padding: clamp(4em, 4vw, 12em) clamp(6em, 14vw, 15em);
     border-radius: 1em;
     z-index: 1000;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
@@ -42,7 +47,7 @@ html, body {
 
 .game-over h1 {
     font-family: 'AldotheApache', Arial, sans-serif;
-    font-size: 4em;
+    font-size: clamp(3em, 2vw, 7em);
     margin-bottom: 0.5em;
 }
 
@@ -80,13 +85,18 @@ html, body {
     transform: translateX(-50%);
     background: rgba(0, 0, 0, 0.2);
     color: white;
+    transform-origin: center;
     font-family: 'AldotheApache', Arial, sans-serif;
-    font-size: 3em;
-    padding: 0.5em 1em;
+    font-size: clamp(0.8em, 2vw, 3em);
+    padding: clamp(0.5em, 1vw, 1em) clamp(1em, 2vw, 2em);
     border-radius: 0.5em;
     z-index: 1003;    
     opacity: 0;
-    transform-origin: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.5em, 1vw, 1em);
+    text-align: center;
 }
 
 .score-value {
@@ -104,22 +114,34 @@ html, body {
     color: white;
     text-align: center;
     background: rgba(0,0,0,0.7);
-    padding: 5em 12em;
+    padding: clamp(3em, 3vw, 8em);
     border-radius: 1em;
     z-index: 1000;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
     opacity: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: clamp(3em, 5vw, 7em);
+}
+
+.start-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(1em, 2vw, 3em);
 }
 
 .start-screen h1 {
     font-family: 'AldotheApache', Arial, sans-serif;
-    font-size: 7em;
-    margin-bottom: 0.5em;
+    width: clamp(6em, 10vw, 30em);
+    font-size: clamp(3em, 6vw, 7em);
 }
 
 .start-screen button {
     margin-top: 0;
-    padding: 0.7em 1.6em;
+    padding: clamp(0.2em, 0.6vw, 1em) clamp(1em, 3vw, 2em);
     font-size: 2.5em;
     font-family: 'AldotheApache', Arial, sans-serif;
     z-index: 1001;
@@ -141,12 +163,12 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-top: 2em;
+    width:fit-content;
     gap: 1em;
     font-family: 'AldotheApache', Arial, sans-serif;
-    font-size: 2em;
+    font-size: clamp(1em, 1.5vw, 2em);
     color: white;
-    padding: 25px;
+    padding: clamp(0.3em, .5vw, 1em) clamp(1em, 3vw, 2em);
     background: rgba(0,0,0,0.5);
     border-radius: 2rem;
 }
